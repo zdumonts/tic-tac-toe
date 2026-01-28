@@ -35,6 +35,8 @@ TicTacToe::~TicTacToe()
 {
 }
 
+// I USED MACOS FOR THIS ASSIGNMENT
+
 // -----------------------------------------------------------------------------
 // make an X or an O
 // -----------------------------------------------------------------------------
@@ -54,10 +56,18 @@ Bit* TicTacToe::PieceForPlayer(const int playerNumber)
 void TicTacToe::setUpBoard()
 {
     // here we should call setNumberOfPlayers to 2 and then set up the game options so the mouse knows to draw a 3x3 grid
+    setNumberOfPlayers(2);
     // _gameOptions has a rowX and rowY property we should set to 3
+    _gameOptions.rowX = _gameOptions.rowY = 3;
     // then we need to setup our 3x3 array in _grid with the correct position of the square, and load the "square.png" sprite for each square
     // we will use the initHolder function on each square to do this
+    for (int row = 0; row < 3; row++) {
+        for (int col = 0; col < 3; col++) {
+            _grid[row][col].initHolder(ImVec2((row*100)+10,(col*100)+30), "square.png", col, row);
+        }
+    }
     // finally we should call startGame to get everything going
+    startGame();
 }
 
 //
@@ -67,20 +77,27 @@ bool TicTacToe::actionForEmptyHolder(BitHolder *holder)
 {
     // 1) Guard clause: if holder is nullptr, fail fast.
     //    (Beginner hint: always check pointers before using them.)
-    //    if (!holder) return false;
+    if (!holder) return false;
 
     // 2) Is it actually empty?
     //    Ask the holder for its current Bit using the bit() function.
     //    If there is already a Bit in this holder, return false.
+    Bit* b = holder->bit();
+    if (b) return false;
+
+    b = new Bit();
 
     // 3) Place the current player's piece on this holder:
     //    - Figure out whose turn it is (getCurrentPlayer()->playerNumber()).
     //    - Create a Bit via PieceForPlayer(currentPlayerIndex).
     //    - Position it at the holder's position (holder->getPosition()).
     //    - Assign it to the holder: holder->setBit(newBit);
+    b = PieceForPlayer(getCurrentPlayer()->playerNumber());
+    b->setPosition(holder->getPosition());
+    holder->setBit(b);
 
     // 4) Return whether we actually placed a piece. true = acted, false = ignored.
-    return false; // replace with true if you complete a successful placement    
+    return true; // replace with true if you complete a successful placement    
 }
 
 bool TicTacToe::canBitMoveFrom(Bit *bit, BitHolder *src)
@@ -102,6 +119,11 @@ void TicTacToe::stopGame()
 {
     // clear out the board
     // loop through the 3x3 array and call destroyBit on each square
+    for (int x = 0; x < 3; x++) {
+        for (int y = 0; y < 3; y++) {
+            _grid[x][y].destroyBit();
+        }
+    }
 }
 
 //
@@ -114,7 +136,11 @@ Player* TicTacToe::ownerAt(int index ) const
     // x = index % 3 
     // if there is no bit at that location (in _grid) return nullptr
     // otherwise return the owner of the bit at that location using getOwner()
-    return nullptr;
+    int y = index / 3;
+    int x = index % 3;
+    Bit *b = (_grid[x][y]).bit();
+    if (!b) return nullptr;
+    return b->getOwner();
 }
 
 Player* TicTacToe::checkForWinner()
@@ -138,6 +164,16 @@ Player* TicTacToe::checkForWinner()
 
     // Hint: Consider using an array to store the winning combinations
     // to avoid repetitive code
+
+    // winning triples
+    int winning[8][3] = {{0,1,2},{3,4,5},{6,7,8},{0,3,6},{1,4,7},{2,5,8},{0,4,8},{2,4,6}};
+    // loop through winning triples and check if either player is in winning state
+    for (int i = 0; i < 8; i++) {
+        if ((ownerAt(winning[i][0]) == ownerAt(winning[i][1]) && (ownerAt(winning[i][1]) == ownerAt(winning[i][2])))) {
+            return ownerAt(winning[i][0]);
+        }
+    }
+    
     return nullptr;
 }
 
@@ -146,7 +182,12 @@ bool TicTacToe::checkForDraw()
     // is the board full with no winner?
     // if any square is empty, return false
     // otherwise return true
-    return false;
+    for (int i = 0; i < 9; i++) {
+        if (!(ownerAt(i))) {
+            return false;
+        }
+    }
+    return true;
 }
 
 //
@@ -176,7 +217,23 @@ std::string TicTacToe::stateString() const
     // remember that player numbers are zero-based, so add 1 to get '1' or '2'
     // if the bit is null, add '0' to the string
     // finally, return the constructed string
-    return "000000000";
+    std::string state_string;
+
+   // loop through 3x3 grid 
+    for (int y = 0; y < 3; y++) {
+        for (int x = 0; x < 3; x++) {
+            if (_grid[x][y].bit()) {
+               // if we have a valid bit in grid, get the player number of bit and set it in state string
+               Bit* b = _grid[x][y].bit();
+               int p = b->getOwner()->playerNumber();
+               state_string += std::to_string(p + 1);
+            } else {
+               // if bit is null push a 0 into our string
+               state_string.push_back('0');
+            }
+        }
+    }
+    return state_string;
 }
 
 //
@@ -205,6 +262,21 @@ void TicTacToe::setStateString(const std::string &s)
     // loop through the 3x3 array and set each square accordingly
     // the string should always be valid, so you don't need to check its length or contents
     // but you can assume it will always be 9 characters long and only contain '0', '1', or '2'
+    int x, y = 0;
+    for (int i = 0; i < 9; i++) {
+        y = i / 3;
+        x = i % 3;
+        if (s[i] == '1') {
+            Bit* b = PieceForPlayer(0);
+            _grid[x][y].setBit(b);
+        } else if (s[i] == '2') {
+            Bit* b = PieceForPlayer(1);
+            _grid[x][y].setBit(b);
+        } else {
+            Bit*b = nullptr;
+            _grid[x][y].setBit(nullptr);
+        }
+    }
 }
 
 
