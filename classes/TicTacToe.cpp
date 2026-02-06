@@ -311,10 +311,15 @@ void TicTacToe::updateAI()
     int bestMove = -10000;
     int bestSquare = -1;
 
+    // iterate through the open squares in the grid and call negamax on them
+    // to get the new score of picking that square
     for (int i = 0; i<9; i++) {
         if (currentState[i] == '0') {
             currentState[i] = '2';
             int newValue = -negamax(currentState, 0, 0, 0, HUMAN_PLAYER);
+            // if the new score we get is better than our current, we set the
+            // best to the new score and the the best square to the current i
+            // corresponding to that score
             if (newValue > bestMove) {
                 bestSquare = i;
                 bestMove = newValue;
@@ -323,6 +328,7 @@ void TicTacToe::updateAI()
         }
     }
 
+    // play the move that had the highest score
     if (bestSquare != -1) {
         actionForEmptyHolder(&_grid[bestSquare%3][bestSquare/3]);
         endTurn();
@@ -331,10 +337,13 @@ void TicTacToe::updateAI()
 
 int aiBoardEval(std::string &state) {
     int winning[8][3] = {{0,1,2},{3,4,5},{6,7,8},{0,3,6},{1,4,7},{2,5,8},{0,4,8},{2,4,6}};
+    // see if we are in a winning state by iterating thgough the winning states and checking
+    // our state string to see if the same player is in all 3 spots of a winning state
     for (int i = 0; i < 8; i++) {
         char player = state[winning[i][0]];
         if (player != '0') {
             if ((player == state[winning[i][1]] && player == state[winning[i][2]])) {
+                // if we are in a winning state return score of winning state
                 return 10;
             } 
         }
@@ -352,6 +361,10 @@ int TicTacToe::negamax(std::string &state, int depth, int alpha, int beta, int c
 
     int bestVal = -10000;
 
+    // iterate through the remaning open board states and call negamax on them to
+    // go through all possible game states with the current state, pick the game
+    // state with the highest score and set that to the best value, return the best
+    // value
     for (int i=0; i<9; i++) {
         if (state[i] == '0') {
             state[i] = (color == HUMAN_PLAYER ? '1' : '2');
