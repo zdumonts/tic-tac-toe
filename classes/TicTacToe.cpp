@@ -24,8 +24,8 @@
 // The rest of the routines are written as “comment-first” TODOs for you to complete.
 // -----------------------------------------------------------------------------
 
-const int AI_PLAYER   = 1;      // index of the AI player (O)
-const int HUMAN_PLAYER= 0;      // index of the human player (X)
+const int AI_PLAYER    = 1;      
+const int HUMAN_PLAYER = -1;      
 
 TicTacToe::TicTacToe()
 {
@@ -35,8 +35,6 @@ TicTacToe::~TicTacToe()
 {
 }
 
-// I USED MACOS FOR THIS ASSIGNMENT
-
 // -----------------------------------------------------------------------------
 // make an X or an O
 // -----------------------------------------------------------------------------
@@ -45,7 +43,7 @@ Bit* TicTacToe::PieceForPlayer(const int playerNumber)
 {
     // depending on playerNumber load the "x.png" or the "o.png" graphic
     Bit *bit = new Bit();
-    bit->LoadTextureFromFile(playerNumber == 1 ? "x.png" : "o.png");
+    bit->LoadTextureFromFile(playerNumber == 1 ? "o.png" : "x.png");
     bit->setOwner(getPlayerAt(playerNumber));
     return bit;
 }
@@ -65,6 +63,10 @@ void TicTacToe::setUpBoard()
         for (int col = 0; col < 3; col++) {
             _grid[row][col].initHolder(ImVec2((row*100)+10,(col*100)+30), "square.png", col, row);
         }
+    }
+    // setup AI
+    if (gameHasAI()) {
+        setAIPlayer(AI_PLAYER);
     }
     // finally we should call startGame to get everything going
     startGame();
@@ -283,8 +285,82 @@ void TicTacToe::setStateString(const std::string &s)
 //
 // this is the function that will be called by the AI
 //
+
+/*
+void TicTacToe::updateAI() {
+    int played = 0;
+    for (int y = 0; y < 3; y++) {
+        if (played == 1) {
+            break;
+        }
+        for (int x = 0; x < 3; x++) {
+            if (_grid[x][y].bit() == nullptr) {
+                // take the first open square
+                actionForEmptyHolder(&_grid[x][y]);
+                endTurn();
+                played = 1;
+                break;
+            }
+        }
+    }
+}
+*/
 void TicTacToe::updateAI() 
 {
-    // we will implement the AI in the next assignment!
+    std::string currentState = stateString();
+    int bestMove = -10000;
+    int bestSquare = -1;
+
+    for (int i = 0; i<9; i++) {
+        if (currentState[i] == '0') {
+            currentState[i] = '2';
+            int newValue = -negamax(currentState, 0, 0, 0, HUMAN_PLAYER);
+            if (newValue > bestMove) {
+                bestSquare = i;
+                bestMove = newValue;
+            }
+            currentState[i] = '0';
+        }
+    }
+
+    if (bestSquare != -1) {
+        actionForEmptyHolder(&_grid[bestSquare%3][bestSquare/3]);
+        endTurn();
+    } 
 }
 
+int aiBoardEval(std::string &state) {
+    int winning[8][3] = {{0,1,2},{3,4,5},{6,7,8},{0,3,6},{1,4,7},{2,5,8},{0,4,8},{2,4,6}};
+    for (int i = 0; i < 8; i++) {
+        char player = state[winning[i][0]];
+        if (player != '0') {
+            if ((player == state[winning[i][1]] && player == state[winning[i][2]])) {
+                return 10;
+            } 
+        }
+    }
+    return 0;
+}
+
+int TicTacToe::negamax(std::string &state, int depth, int alpha, int beta, int color) {
+    // check for draw
+    if (state.find('0') == std::string::npos)
+        return 0;
+    // check for win, return -score on win
+    if (aiBoardEval(state))
+        return -aiBoardEval(state);
+
+    int bestVal = -10000;
+
+    for (int i=0; i<9; i++) {
+        if (state[i] == '0') {
+            state[i] = (color == HUMAN_PLAYER ? '1' : '2');
+            int newVal = -negamax(state, depth+1, -beta, -alpha, -color);
+            if (newVal > bestVal) {
+                bestVal = newVal;
+            }
+            state[i] = '0';
+        }
+    }
+    return bestVal;
+}
